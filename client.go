@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/fabioberger/airtable-go/utils"
+	"github.com/pkg/errors"
 )
 
 const majorAPIVersion = 0
@@ -287,9 +288,10 @@ type SortParameter struct {
 
 // Error represents an error returned by the Airtable API.
 type Error struct {
-	Type       string `json:"type"`
-	Message    string `json:"message"`
-	StatusCode int
+	Type           string `json:"type"`
+	Message        string `json:"message"`
+	StatusCode     int
+	ServerResponse string `json:"server_response"`
 }
 
 func (e Error) Error() string {
@@ -303,15 +305,16 @@ func checkStatusCodeForError(statusCode int, rawBody []byte) error {
 
 	response := map[string]interface{}{}
 	if err := json.Unmarshal(rawBody, &response); err != nil {
-		return err
+		return errors.WithMessage(err, "Server response: \""+string(rawBody)+"\"")
 	}
 
 	errorObj, ok := response["error"]
 	if !ok {
 		return Error{
-			Type:       "MALFORMED_AIRTABLE_RESPONSE",
-			Message:    "Airtable returned a non-200 response without an error json body",
-			StatusCode: statusCode,
+			Type:           "MALFORMED_AIRTABLE_RESPONSE",
+			Message:        "Airtable returned a non-200 response without an error json body",
+			StatusCode:     statusCode,
+			ServerResponse: string(rawBody),
 		}
 	}
 	// Marshall inner error back to JSON
