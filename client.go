@@ -215,6 +215,7 @@ func (c *Client) request(method string, endpoint string, body interface{}) (rawB
 	}
 
 	if statusCode == http.StatusTooManyRequests && c.ShouldRetryIfRateLimited {
+		fmt.Println("warning: hit airtable throttling limit!")
 		time.Sleep(retryDelayIfRateLimited)
 		return c.request(method, endpoint, body)
 	}
